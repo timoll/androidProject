@@ -56,6 +56,7 @@ public class MainI2cActivity extends Activity {
 	double blue;
 	double clear;
 
+	final ShellExecGPIO gpio = new ShellExecGPIO();
 
 	MyTimerTask myTimerTask;
 	/* Define widgets */
@@ -84,73 +85,14 @@ public class MainI2cActivity extends Activity {
 		i2cCommBuffer[1] = MCP9800_12_BIT;
 		i2c.write(fileHandle, i2cCommBuffer, 2);
 
-	 /* Setup mcp9800 register to read the temperature */
-		i2cCommBuffer[0] = MCP9800_TEMP;
-		i2c.write(fileHandle, i2cCommBuffer, 1);
-
-	 /* Read the current temperature from the mcp9800 device */
-		i2c.read(fileHandle, i2cCommBuffer, 2);
-
-	 /* Assemble the temperature values */
-		Temperature = ((i2cCommBuffer[0] << 8) | i2cCommBuffer[1]);
-		Temperature = Temperature >> 4;
-
-	 /* Convert current temperature to float */
-		TempC = 1.0 * Temperature * 0.0625;
-
-     /* Display actual temperature */
-		textViewTemperature.setText("Temperature: " + String.format("%3.2f", TempC) + DEGREE_SYMBOL);
-		//Color
-
-		i2c.SetSlaveAddress(fileHandle, 0x39);
-
-     /* Setup i2c buffer for the configuration register */
-		i2cCommBuffer[0] = 0x03;
-
-		i2c.write(fileHandle, i2cCommBuffer, 1);
-
-		//Green
-     /* Setup mcp9800 register to read the temperature */
-		i2cCommBuffer[0] = 0xB0;
-		i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-		i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-		green = ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
-
-		//Blue
-             /* Setup mcp9800 register to read the temperature */
-		i2cCommBuffer[0] = 0xB2;
-		i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-		i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-		blue = ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
-
-		//Red
-             /* Setup mcp9800 register to read the temperature */
-		i2cCommBuffer[0] = 0xB4;
-		i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-		i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-		red = ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
-
-		findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb((int)red, (int)green, (int)blue));
-		((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb((int)(255 - red),(int)( 255 - green),(int) (255 - blue)));
-	 /* Close the i2c file */
 		i2c.close(fileHandle);
 
 		timer = new Timer();
 		myTimerTask = new MyTimerTask();
 
-		timer.schedule(myTimerTask, 0, 500);
+		timer.schedule(myTimerTask, 0, 100);
+		gpio.export("65");
+		gpio.gpio_set_direction_out("65");
 
 	}
 
@@ -232,6 +174,12 @@ public class MainI2cActivity extends Activity {
 					((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - normalizedRed, 255 - normalizedGreen, 255 - normalizedBlue));
 	 /* Close the i2c file */
 					i2c.close(fileHandle);
+					String taster=gpio.read_value("49");
+					if(taster.contains("1")){
+						gpio.write_value("65", '0');
+					} else {
+						gpio.write_value("65",'1');
+					}
 
 					/*
 					*  add data to a fancy graph bleuer
