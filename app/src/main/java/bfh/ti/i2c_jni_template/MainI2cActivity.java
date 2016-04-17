@@ -142,8 +142,8 @@ public class MainI2cActivity extends Activity {
      /* Assemble the temperature values */
 		red = ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
 
-		findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb(Red, Green, Blue));
-		((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - Red, 255 - Green, 255 - Blue));
+		findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb((int)red, (int)green, (int)blue));
+		((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb((int)(255 - red),(int)( 255 - green),(int) (255 - blue)));
 	 /* Close the i2c file */
 		i2c.close(fileHandle);
 
@@ -172,6 +172,30 @@ public class MainI2cActivity extends Activity {
 	}
 
 	private class MyTimerTask extends TimerTask {
+		int channel(int cIndex){
+			switch (cIndex){
+				case 1:
+					i2cCommBuffer[0] = 0xB0;
+					break;
+				case 2:
+					i2cCommBuffer[0] = 0xB2;
+					break;
+				case 3:
+					i2cCommBuffer[0] = 0xB4;
+					break;
+				case 4:
+					i2cCommBuffer[0] = 0xB8;
+					break;
+				default:
+					i2cCommBuffer[0] = 0xB8;
+					break;
+			}
+			i2c.write(fileHandle, i2cCommBuffer, 1);
+
+     /* Read the current temperature from the mcp9800 device */
+			i2c.read(fileHandle, i2cCommBuffer, 2);
+			return ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
+		}
 		@Override
 		public void run() {
 			runOnUiThread(new Runnable() {
@@ -181,85 +205,37 @@ public class MainI2cActivity extends Activity {
 
 	 /* Open the i2c device */
 					fileHandle = i2c.open(MCP9800_FILE_NAME);
-
-	 /* Set the I2C slave address for all subsequent I2C device transfers */
-					i2c.SetSlaveAddress(fileHandle, MCP9800_I2C_ADDR);
-
-	 /* Setup i2c buffer for the configuration register */
-					i2cCommBuffer[0] = MCP9800_CONFIG;
-					i2cCommBuffer[1] = MCP9800_12_BIT;
-					i2c.write(fileHandle, i2cCommBuffer, 2);
-
-	 /* Setup mcp9800 register to read the temperature */
-					i2cCommBuffer[0] = MCP9800_TEMP;
-					i2c.write(fileHandle, i2cCommBuffer, 1);
-
-	 /* Read the current temperature from the mcp9800 device */
-					i2c.read(fileHandle, i2cCommBuffer, 2);
-
-	 /* Assemble the temperature values */
-					Temperature = ((i2cCommBuffer[0] << 8) | i2cCommBuffer[1]);
-					Temperature = Temperature >> 4;
-
-	 /* Convert current temperature to float */
-					TempC = 1.0 * Temperature * 0.0625;
-
-     /* Display actual temperature */
-					textViewTemperature.setText("Temperature: " + String.format("%3.2f", TempC) + DEGREE_SYMBOL);
-					//Color
-
 					i2c.SetSlaveAddress(fileHandle, 0x39);
 
      /* Setup i2c buffer for the configuration register */
-					i2cCommBuffer[0] = 0x03;
 
-					i2c.write(fileHandle, i2cCommBuffer, 1);
-
-					//Green
-     /* Setup mcp9800 register to read the temperature */
-					i2cCommBuffer[0] = 0xB0;
-					i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-					i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-					red = ((256 * i2cCommBuffer[0]) + i2cCommBuffer[1]);
-
-					//Blue
-             /* Setup mcp9800 register to read the temperature */
-					i2cCommBuffer[0] = 0xB2;
-					i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-					i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-					green = ((256 * i2cCommBuffer[0]) + i2cCommBuffer[1]);
-
-					//Red
-             /* Setup mcp9800 register to read the temperature */
-					i2cCommBuffer[0] = 0xB4;
-					i2c.write(fileHandle, i2cCommBuffer, 1);
-
-     /* Read the current temperature from the mcp9800 device */
-					i2c.read(fileHandle, i2cCommBuffer, 2);
-
-     /* Assemble the temperature values */
-					blue = ((256 * i2cCommBuffer[0]) + i2cCommBuffer[1]);
-					if(red<=256){
-						red=255;
+					red=channel(1);
+					double bigest=red;
+					green=channel(2);
+					if(green>bigest){
+						bigest=green;
 					}
-					if(green<=256){
-						green=255;
+					blue=channel(3);
+					if(blue>bigest){
+						bigest=blue;
 					}
-					if(blue<=256){
-						blue=255;
+					clear=channel(4);
+					if(clear>bigest){
+						bigest=clear;
 					}
-					findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb((int)red, (int)green, (int)blue));
-					((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - red, 255 - green, 255 - Blue));
+
+					int normalizedRed=(int)(red/bigest*256);
+					int normalizedGreen=(int)(green/bigest*256);
+					int normalizedBlue=(int)(blue/bigest*256);
+
+					findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb(normalizedRed, normalizedGreen, normalizedBlue));
+					((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - normalizedRed, 255 - normalizedGreen, 255 - normalizedBlue));
 	 /* Close the i2c file */
 					i2c.close(fileHandle);
+
+					/*
+					*  add data to a fancy graph bleuer
+					* */
 
 				}
 			});
