@@ -247,17 +247,17 @@ public class MainI2cActivity extends Activity {
 
      /* Assemble the temperature values */
 					blue = ((256 * i2cCommBuffer[0]) + i2cCommBuffer[1]);
-					if(Red<=256){
-						Red=255;
+					if(red<=256){
+						red=255;
 					}
-					if(Green<=256){
-						Green=255;
+					if(green<=256){
+						green=255;
 					}
-					if(Blue<=256){
-						Blue=255;
+					if(blue<=256){
+						blue=255;
 					}
-					findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb(Red, Green, Blue));
-					((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - Red, 255 - Green, 255 - Blue));
+					findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb((int)red, (int)green, (int)blue));
+					((Button)findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - red, 255 - green, 255 - Blue));
 	 /* Close the i2c file */
 					i2c.close(fileHandle);
 
