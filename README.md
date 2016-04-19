@@ -14,4 +14,4 @@ Next to the color sensor is a white led. To be able to use that led it is necess
 
 With that in place the led can be controlled with the taster T1
 
-The Data gets deleted after 100 entries. Taster T4 resets the data imediately.
+The Data gets deleted after 100 entries. Taster T4 resets the data immediately.
