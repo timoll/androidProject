@@ -340,8 +340,10 @@ public class MainI2cActivity extends Activity {
 					String taster = gpio.read_value("49");
 					if (taster.contains("1")) {
 						gpio.write_value("65", '0');
+						gpio.write_value("61", '1');
 					} else {
 						gpio.write_value("65", '1');
+						gpio.write_value("61", '0');
 					}
 					taster = gpio.read_value("7");
 					if(taster.contains("0")){
