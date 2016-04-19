@@ -23,18 +23,18 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.YAxis.AxisDependency;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 //import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
@@ -69,11 +69,13 @@ public class MainI2cActivity extends Activity {
 	Timer timer;
 	double TempC;
 	int Temperature;
-
+	int entryCount;
 	double green;
 	double red;
 	double blue;
 	double clear;
+	Queue<Double> greenList;
+	boolean reset=false;
 
 	final ShellExecGPIO gpio = new ShellExecGPIO();
 
@@ -88,7 +90,6 @@ public class MainI2cActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main_i2c);
-		textViewTemperature = (TextView) findViewById(R.id.textViewTemperature);
 	  
 	 /* Instantiate the new i2c device */
 		i2c = new I2C();
@@ -98,7 +99,8 @@ public class MainI2cActivity extends Activity {
 
 	 /* Set the I2C slave address for all subsequent I2C device transfers */
 		i2c.SetSlaveAddress(fileHandle, MCP9800_I2C_ADDR);
-
+		i2cCommBuffer[0]=0x03;
+		i2c.write(fileHandle,i2cCommBuffer,1);
 	 /* Setup i2c buffer for the configuration register */
 		i2cCommBuffer[0] = MCP9800_CONFIG;
 		i2cCommBuffer[1] = MCP9800_12_BIT;
@@ -110,8 +112,15 @@ public class MainI2cActivity extends Activity {
 		myTimerTask = new MyTimerTask();
 
 		timer.schedule(myTimerTask, 0, 100);
-		gpio.export("65");
-		gpio.gpio_set_direction_out("65");
+		String[] shellCmd = {"/system/bin/sh","-c", String.format("/data/initWhiteLed")};
+		try
+		{
+			Runtime.getRuntime().exec(shellCmd);
+
+		}
+		catch (IOException e)
+		{
+		}
 	/* CHARTSTUFF*/
 		chart=(LineChart) findViewById(R.id.chart);
 		//chart = (LineChart) findViewById(R.id.chart1);
@@ -121,51 +130,59 @@ public class MainI2cActivity extends Activity {
 		chart.setData(new LineData());
 		chart.invalidate();
 		addDataSet("red");
-		addDataSet("blue");
 		addDataSet("green");
+		addDataSet("blue");
+
+
+
+
 	}
 
 
-	private void addEntry(double red, double blue,double green) {
+	private void addEntry(double red, double green,double blue) {
 		LineData data = chart.getData();
-
+		if(reset){
+			chart.setData(new LineData());
+			addDataSet("red");
+			addDataSet("green");
+			addDataSet("blue");
+			entryCount=0;
+			reset=false;
+		}
 		if (data != null) {
 
 			ILineDataSet set0 = data.getDataSetByIndex(0);
-			ILineDataSet set1 = data.getDataSetByIndex(1);
-			ILineDataSet set2 = data.getDataSetByIndex(2);
 
 			// set.addEntry(...); // can be called as well
 
 
 			// add a new x-value first
-			data.addXValue(set0.getEntryCount() + "");
-			data.addXValue(set1.getEntryCount() + "");
-			data.addXValue(set2.getEntryCount() + "");
+
+				data.addXValue(set0.getEntryCount() + "");
+
+
+			data.addEntry(new Entry((float) red, entryCount), 0);
+			data.addEntry(new Entry((float) green, entryCount), 1);
+			data.addEntry(new Entry((float) blue, entryCount), 2);
 
 
 
-			data.addEntry(new Entry((float) red, set0.getEntryCount()), 0);
-			data.addEntry(new Entry((float) blue, set1.getEntryCount()), 1);
-			data.addEntry(new Entry((float) green, set2.getEntryCount()), 2);
-
-			/*if(set0.getEntryCount()>=100)
-			{
-
-				removeLastEntry(0);
-				removeLastEntry(1);
-				removeLastEntry(2);
-			}*/
 			// let the chart know it's data has changed
-			chart.notifyDataSetChanged();
-			chart.setAutoScaleMinMaxEnabled(true);
-			chart.setVisibleXRangeMaximum(15);
+
+			//chart.setVisibleXRangeMaximum(30);
 
 			//chart.setVisibleYRangeMaximum(15, AxisDependency.LEFT);
 //
 //            // this automatically refreshes the chart (calls invalidate())
-			chart.moveViewTo(data.getXValCount() - 15, 50f, AxisDependency.LEFT);
-		}	chart.invalidate();
+
+			chart.notifyDataSetChanged();
+			chart.setAutoScaleMinMaxEnabled(true);
+			chart.invalidate();
+			entryCount++;
+			if(entryCount==100){
+				reset=true;
+			}
+		}
 	}
 	private void removeLastEntry(int index) {
 
@@ -292,13 +309,13 @@ public class MainI2cActivity extends Activity {
 					counter1++;
 	 /* Open the i2c device */
 					fileHandle = i2c.open(MCP9800_FILE_NAME);
-					i2c.SetSlaveAddress(fileHandle, 0x39);
+					i2c.SetSlaveAddress(fileHandle, (char)0x39);
 
      /* Setup i2c buffer for the configuration register */
 
-					red = channel(1);
+					red = channel(2);
 					double bigest = red;
-					green = channel(2);
+					green = channel(1);
 					if (green > bigest) {
 						bigest = green;
 					}
@@ -312,15 +329,12 @@ public class MainI2cActivity extends Activity {
 					}
 					if (counter1 == 5) {
 						counter1 = 0;
-						addEntry(red, blue, green);
+						addEntry(red, green, blue);
 
 					}
 					int normalizedRed = (int) (red / bigest * 256);
 					int normalizedGreen = (int) (green / bigest * 256);
 					int normalizedBlue = (int) (blue / bigest * 256);
-
-					findViewById(R.id.BtnColor).setBackgroundColor(Color.rgb(normalizedRed, normalizedGreen, normalizedBlue));
-					((Button) findViewById(R.id.BtnColor)).setTextColor(Color.rgb(255 - normalizedRed, 255 - normalizedGreen, 255 - normalizedBlue));
 	 /* Close the i2c file */
 					i2c.close(fileHandle);
 					String taster = gpio.read_value("49");
@@ -329,7 +343,11 @@ public class MainI2cActivity extends Activity {
 					} else {
 						gpio.write_value("65", '1');
 					}
-					addDataSet("red");
+					taster = gpio.read_value("7");
+					if(taster.contains("0")){
+						reset=true;
+					}
+					//addDataSet("red");
 					//addDataSet("blue");
 					//addDataSet("green");
 					//addEntry();
