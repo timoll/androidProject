@@ -32,12 +32,14 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
-//import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
+
+import com.github.mikephil.charting.components.YAxis.AxisDependency;
 
 public class MainI2cActivity extends Activity {
 	LineChart chart;// = (LineChart) findViewById(R.id.chart);
@@ -50,14 +52,19 @@ public class MainI2cActivity extends Activity {
 	xVals.add("1.Q"); xVals.add("2.Q"); xVals.add("3.Q"); xVals.add("4.Q");
 	LineData data = new LineData(xVals, dataSets);
 	/* MCP9800 Register pointers */
-	private static final char MCP9800_TEMP = 0x00;      /* Ambient Temperature Register */
+
 	private static final char MCP9800_CONFIG = 0x01;    /* Sensor Configuration Register */
+
+
+
+	private static final char COMMAND_BYTE = 0x80;    /* Sensor Configuration Register */
+
 
 	/* Sensor Configuration Register Bits */
 	private static final char MCP9800_12_BIT = 0x60;
 
 	/* i2c Address of MCP9802 device */
-	private static final char MCP9800_I2C_ADDR = 0x48;
+	private static final char MCP9800_I2C_ADDR = 0x39;
 
 	/* i2c device file name */
 	private static final String MCP9800_FILE_NAME = "/dev/i2c-3";
@@ -74,6 +81,8 @@ public class MainI2cActivity extends Activity {
 	double red;
 	double blue;
 	double clear;
+
+	double xyz;
 	Queue<Double> greenList;
 	boolean reset=false;
 
@@ -129,11 +138,17 @@ public class MainI2cActivity extends Activity {
 		chart.setDescription("RGB");
 		chart.setData(new LineData());
 		chart.invalidate();
+
 		addDataSet("red");
 		addDataSet("green");
 		addDataSet("blue");
 
-
+		i2c = new I2C();
+		fileHandle = i2c.open(MCP9800_FILE_NAME);
+		i2c.SetSlaveAddress(fileHandle, MCP9800_I2C_ADDR);
+		i2cCommBuffer[0] = COMMAND_BYTE;
+		i2cCommBuffer[1] = 0x03;
+		i2c.write(fileHandle, i2cCommBuffer, 2);
 
 
 	}
@@ -152,36 +167,56 @@ public class MainI2cActivity extends Activity {
 		if (data != null) {
 
 			ILineDataSet set0 = data.getDataSetByIndex(0);
-
+			ILineDataSet set1 = data.getDataSetByIndex(1);
+			ILineDataSet set2 = data.getDataSetByIndex(2);
 			// set.addEntry(...); // can be called as well
 
 
 			// add a new x-value first
 
-				data.addXValue(set0.getEntryCount() + "");
+
+				data.addXValue("");
 
 
 			data.addEntry(new Entry((float) red, entryCount), 0);
 			data.addEntry(new Entry((float) green, entryCount), 1);
 			data.addEntry(new Entry((float) blue, entryCount), 2);
 
+			if(set0.getEntryCount()>30) {
+				set0.removeFirst();
+				set1.removeFirst();
+				set2.removeFirst();
+
+			}
 
 
 			// let the chart know it's data has changed
 
 			//chart.setVisibleXRangeMaximum(30);
 
+			//chart.setVisibleYRangeMaximum(30, AxisDependency.LEFT);
+//
+//            // this automatically refreshes the chart (calls invalidate())
+			//chart.moveViewTo(data.getXValCount() - 30, 50f, AxisDependency.LEFT);
+			chart.notifyDataSetChanged();
+
+			chart.setVisibleXRangeMaximum(28);
 			//chart.setVisibleYRangeMaximum(15, AxisDependency.LEFT);
 //
 //            // this automatically refreshes the chart (calls invalidate())
+			chart.moveViewTo(data.getXValCount()-15, 50f, AxisDependency.RIGHT);
 
-			chart.notifyDataSetChanged();
+			/*chart.notifyDataSetChanged();*/
 			chart.setAutoScaleMinMaxEnabled(true);
-			chart.invalidate();
+			/*chart.setVisibleXRangeMaximum(15);
+*/
+/*			chart.notifyDataSetChanged();
+			chart.setAutoScaleMinMaxEnabled(true);
+			chart.invalidate();*/
 			entryCount++;
-			if(entryCount==100){
+			/*if(entryCount==100){
 				reset=true;
-			}
+			}*/
 		}
 	}
 	private void removeLastEntry(int index) {
@@ -228,6 +263,7 @@ public class MainI2cActivity extends Activity {
 					set.setHighLightColor(Color.RED);
 					set.setValueTextSize(10f);
 					set.setValueTextColor(Color.RED);
+					set.setLabel("Red");
 
 					break;
 				case "blue":
@@ -236,7 +272,7 @@ public class MainI2cActivity extends Activity {
 					set.setHighLightColor(Color.BLUE);
 					set.setValueTextSize(10f);
 					set.setValueTextColor(Color.BLUE);
-
+					set.setLabel("Blue");
 					break;
 				case "green":
 					set.setColor(Color.GREEN);
@@ -244,7 +280,7 @@ public class MainI2cActivity extends Activity {
 					set.setHighLightColor(Color.GREEN);
 					set.setValueTextSize(10f);
 					set.setValueTextColor(Color.GREEN);
-
+					set.setLabel("Green");
 					break;
 			}
 
@@ -270,6 +306,7 @@ public class MainI2cActivity extends Activity {
 		android.os.Process.killProcess(android.os.Process.myPid());
 		finish();
 		super.onStop();
+		i2c.close(fileHandle);
 	}
 
 	private class MyTimerTask extends TimerTask {
@@ -297,19 +334,19 @@ public class MainI2cActivity extends Activity {
 			i2c.read(fileHandle, i2cCommBuffer, 2);
 			return ((256 * i2cCommBuffer[1]) + i2cCommBuffer[0]);
 		}
+
+		/* Open the i2c device */
+
 		@Override
 		public void run() {
 
 			runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
-					i2c = new I2C();
 
 
 					counter1++;
-	 /* Open the i2c device */
-					fileHandle = i2c.open(MCP9800_FILE_NAME);
-					i2c.SetSlaveAddress(fileHandle, (char)0x39);
+
 
      /* Setup i2c buffer for the configuration register */
 
@@ -327,16 +364,13 @@ public class MainI2cActivity extends Activity {
 					if (clear > bigest) {
 						bigest = clear;
 					}
-					if (counter1 == 5) {
-						counter1 = 0;
-						addEntry(red, green, blue);
 
-					}
 					int normalizedRed = (int) (red / bigest * 256);
 					int normalizedGreen = (int) (green / bigest * 256);
 					int normalizedBlue = (int) (blue / bigest * 256);
-	 /* Close the i2c file */
-					i2c.close(fileHandle);
+
+	  /* Close the i2c file */
+
 					String taster = gpio.read_value("49");
 					if (taster.contains("1")) {
 						gpio.write_value("65", '0');
@@ -349,30 +383,15 @@ public class MainI2cActivity extends Activity {
 					if(taster.contains("0")){
 						reset=true;
 					}
-					//addDataSet("red");
-					//addDataSet("blue");
-					//addDataSet("green");
-					//addEntry();
-					/*
-					*  add data to a fancy graph bleuer
-					* */
+					if (counter1 == 5) {
+						counter1 = 0;
+						addEntry(red, green, blue);
+
+					}
 
 				}
 			});
 		}
 	}
-	/*private LineDataSet createSet() {
-
-		LineDataSet set = new LineDataSet(null, "DataSet 1");
-		set.setLineWidth(2.5f);
-		set.setCircleRadius(4.5f);
-		set.setColor(Color.rgb(240, 99, 99));
-		set.setCircleColor(Color.rgb(240, 99, 99));
-		set.setHighLightColor(Color.rgb(190, 190, 190));
-		set.setAxisDependency(AxisDependency.LEFT);
-		set.setValueTextSize(10f);
-
-		return set;
-	}*/
 }
 
