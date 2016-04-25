@@ -26,20 +26,20 @@ import android.view.Menu;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.components.YAxis.AxisDependency;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import com.github.mikephil.charting.components.YAxis.AxisDependency;
 
 public class MainI2cActivity extends Activity {
 	LineChart chart;// = (LineChart) findViewById(R.id.chart);
@@ -81,7 +81,8 @@ public class MainI2cActivity extends Activity {
 	double red;
 	double blue;
 	double clear;
-
+	boolean recording=true;
+	boolean oldT2=false;
 	double xyz;
 	Queue<Double> greenList;
 	boolean reset=false;
@@ -169,13 +170,7 @@ public class MainI2cActivity extends Activity {
 			ILineDataSet set0 = data.getDataSetByIndex(0);
 			ILineDataSet set1 = data.getDataSetByIndex(1);
 			ILineDataSet set2 = data.getDataSetByIndex(2);
-			// set.addEntry(...); // can be called as well
-
-
-			// add a new x-value first
-
-
-				data.addXValue("");
+			data.addXValue(Integer.toString(entryCount));
 
 
 			data.addEntry(new Entry((float) red, entryCount), 0);
@@ -189,34 +184,22 @@ public class MainI2cActivity extends Activity {
 
 			}
 
+		    chart.setVisibleXRangeMaximum(28);
+			chart.moveViewTo(data.getXValCount() - 15, 50f, AxisDependency.RIGHT);
+			YAxis yAxis=chart.getAxisLeft();
+			XAxis xAxis =chart.getXAxis();
+			data.calcMinMax(0,30);
+			yAxis.setAxisMaxValue(data.getYMax() + 1);
+			yAxis.setAxisMinValue(data.getYMin()-1);
+			xAxis.setAxisMinValue((float)entryCount-30);
+			xAxis.setAxisMaxValue((float)entryCount);
 
-			// let the chart know it's data has changed
-
-			//chart.setVisibleXRangeMaximum(30);
-
-			//chart.setVisibleYRangeMaximum(30, AxisDependency.LEFT);
-//
-//            // this automatically refreshes the chart (calls invalidate())
-			//chart.moveViewTo(data.getXValCount() - 30, 50f, AxisDependency.LEFT);
 			chart.notifyDataSetChanged();
 
-			chart.setVisibleXRangeMaximum(28);
-			//chart.setVisibleYRangeMaximum(15, AxisDependency.LEFT);
-//
-//            // this automatically refreshes the chart (calls invalidate())
-			chart.moveViewTo(data.getXValCount()-15, 50f, AxisDependency.RIGHT);
+			chart.invalidate();
 
-			/*chart.notifyDataSetChanged();*/
-			chart.setAutoScaleMinMaxEnabled(true);
-			/*chart.setVisibleXRangeMaximum(15);
-*/
-/*			chart.notifyDataSetChanged();
-			chart.setAutoScaleMinMaxEnabled(true);
-			chart.invalidate();*/
 			entryCount++;
-			/*if(entryCount==100){
-				reset=true;
-			}*/
+
 		}
 	}
 	private void removeLastEntry(int index) {
@@ -383,7 +366,18 @@ public class MainI2cActivity extends Activity {
 					if(taster.contains("0")){
 						reset=true;
 					}
-					if (counter1 == 5) {
+					taster =gpio.read_value("112");
+					if(taster.contains("0")){
+						if(!oldT2){
+							oldT2=true;
+							recording=!recording;
+						}
+					} else {
+						if(oldT2){
+							oldT2=false;
+						}
+					}
+					if (counter1 >= 10 && recording) {
 						counter1 = 0;
 						addEntry(red, green, blue);
 
