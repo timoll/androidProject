@@ -12,7 +12,7 @@ extern "C" {
  * Method:    open
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_open
+JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1color_1logger_I2C_open
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -20,7 +20,7 @@ JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_open
  * Method:    SetSlaveAddress
  * Signature: (II)I
  */
-JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_SetSlaveAddress
+JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1color_1logger_I2C_SetSlaveAddress
   (JNIEnv *, jobject, jint, jint);
 
 /*
@@ -28,7 +28,7 @@ JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_SetSlaveAddress
  * Method:    read
  * Signature: (I[II)I
  */
-JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_read
+JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1color_1logger_I2C_read
   (JNIEnv *, jobject, jint, jintArray, jint);
 
 /*
@@ -36,7 +36,7 @@ JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_read
  * Method:    write
  * Signature: (I[II)I
  */
-JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_write
+JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1color_1logger_I2C_write
   (JNIEnv *, jobject, jint, jintArray, jint);
 
 /*
@@ -44,7 +44,7 @@ JNIEXPORT jint JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_write
  * Method:    close
  * Signature: (I)V
  */
-JNIEXPORT void JNICALL Java_bfh_ti_i2c_1jni_1template_I2C_close
+JNIEXPORT void JNICALL Java_bfh_ti_i2c_1color_1logger_I2C_close
   (JNIEnv *, jobject, jint);
 
 #ifdef __cplusplus

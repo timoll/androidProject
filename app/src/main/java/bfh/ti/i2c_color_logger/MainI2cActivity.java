@@ -16,7 +16,7 @@
  ***************************************************************************
  */
 
-package bfh.ti.i2c_jni_template;
+package bfh.ti.i2c_color_logger;
 
 
 import android.app.Activity;
@@ -190,8 +190,8 @@ public class MainI2cActivity extends Activity {
 			XAxis xAxis =chart.getXAxis();
 			data.calcMinMax(0,30);
 			yAxis.setAxisMaxValue(data.getYMax() + 1);
-			yAxis.setAxisMinValue(data.getYMin()-1);
-			xAxis.setAxisMinValue((float)entryCount-30);
+			yAxis.setAxisMinValue(data.getYMin() - 1);
+			xAxis.setAxisMinValue((float) entryCount - 30);
 			xAxis.setAxisMaxValue((float)entryCount);
 
 			chart.notifyDataSetChanged();
